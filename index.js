@@ -65,7 +65,6 @@ module.exports.parser = parser = function(recipient, spec) {
       
       switch(inbyte) {          
         
-        
         // We're starting a new packet
         case CONSTANTS.START:
           position = 0;
@@ -201,17 +200,59 @@ Packet.prototype.setPayload = function (data) {
 
 // Returns escaped data for transmission
 Packet.prototype.toData = function() {
-  var pre_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE - 1);
-  pre_buffer[0] = this.recipient;
-  pre_buffer[1] = this.sender;
-  pre_buffer.writeInt16LE(this.payload.length, 3);
-  this.payload.copy(pre_buffer, PACKET_HEADER_SIZE);
+  var crc8_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE);
+  crc8_buffer[0] = CONSTANTS.START;
+  crc8_buffer[1] = this.recipient;
+  crc8_buffer[2] = this.sender;
+  crc8_buffer.writeInt16LE(this.payload.length, 3);
+  this.payload.copy(crc8_buffer, PACKET_HEADER_SIZE);
   
-  // calculate final size of packet including escaped chars
-  var length = _u.filter(pre_buffer, function (item) {
+  var crc8 = this.crc8(crc8_buffer);
+  
+  var escape_buffer = new Buffer(crc8_buffer.length + 1);
+  crc8_buffer.copy(escape_buffer);
+  escape_buffer[escape_buffer.length-1] = crc8;
+  
+  // How many chars to do we have to escape?
+  var escaped_chars = _u.filter(escape_buffer, function (item) {
     return (item == CONSTANTS.ESC || item == CONSTANTS.END || item == CONSTANTS.START);
-  });
-  console.log(length);
+  }).length - 1; // minus 1 since we don't want to count the START byte
+  
+  // payload data
+  // packet header
+  // another byte for each escape
+  // leave 2 bytes for crc8 and END
+  var outgoing_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE + escaped_chars + 2);
+  
+  outgoing_buffer[0] = CONSTANTS.START;
+  var outgoing_buffer_pos = 1;
+  
+  for (var i=1; i < escape_buffer.length; i++) {
+    var b = escape_buffer[i];
+    switch(b) {
+      case CONSTANTS.START:
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_START;
+      break;
+      case CONSTANTS.END:
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_END;
+      break;
+      case CONSTANTS.ESC:
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_ESC;
+      break;
+      default:
+        outgoing_buffer[outgoing_buffer_pos++] = b;
+      break;
+    }
+  }
+
+  // add the final end byte
+  outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.END;
+  
+  return outgoing_buffer;
+  
 };
 
 Packet.prototype.crc8 = function(buffer, length) {
