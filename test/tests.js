@@ -20,7 +20,7 @@ suite('Packet', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
       buffer[0] = CONSTANTS.START;
-      buffer[1] = 'A'; // address
+      buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
@@ -34,14 +34,14 @@ suite('Packet', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
       buffer[0] = '!';
-      buffer[1] = 'A'; // address
+      buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xED; // crc8
       buffer[11] = CONSTANTS.END; // end
       
-      assert.throws(function(){
+      assert.throws(function() {
         p.load(buffer, buffer.length);
       });
     });
@@ -50,14 +50,14 @@ suite('Packet', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
       buffer[0] = CONSTANTS.START;
-      buffer[1] = 'A'; // address
+      buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xED; // crc8
       buffer[11] = '!'; // end
       
-      assert.throws(function(){
+      assert.throws(function() {
         p.load(buffer, buffer.length);
       });
     });
@@ -66,7 +66,7 @@ suite('Packet', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
       buffer[0] = CONSTANTS.START;
-      buffer[1] = 'A'; // address
+      buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
@@ -82,7 +82,7 @@ suite('Packet', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
       buffer[0] = CONSTANTS.START;
-      buffer[1] = 'A'; // address
+      buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(6, 3);
       buffer.write("HELLO", 5);
@@ -93,8 +93,6 @@ suite('Packet', function() {
         p.load(buffer, buffer.length);
       });
     });
-    
-    
     
   });
     
