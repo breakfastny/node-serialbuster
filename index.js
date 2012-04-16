@@ -30,8 +30,8 @@ var PACKET_HEADER_SIZE    = 5;
 
 
 // Parser for SerialPort
-module.exports.parser = parser = function(address, spec) {
-  if(address == undefined || address === null)
+module.exports.parser = parser = function(receiver, spec) {
+  if(receiver == undefined || receiver === null)
     throw new Error("You have to supply the clients address");
     
   var config = {
@@ -107,10 +107,13 @@ module.exports.Packet = Packet = function(spec) {
   this.config = {
       'broadcast' : CONSTANTS.BROADCAST
     , 'master' : CONSTANTS.MASTER
+    , 'receiver' : CONSTANTS.BROADCAST
+    , 'sender' : CONSTANTS.MASTER
     , 'packet_max_size' : PACKET_MAX_SIZE
   };
   _u.extend(this.config, spec);
-  this.sender = CONSTANTS.MASTER;
+  this.sender = this.config.sender;
+  this.receiver = this.config.receiver;
   this.buffer = null;
 };
 
@@ -127,7 +130,6 @@ Packet.prototype.load = function(buffer) {
   this.buffer.copy(this.payload, 0, PACKET_HEADER_SIZE, this.buffer.length-2);
     
   var assert = function (str, matches, message) {
-    //console.log('Matching', str, matches)
     if (str !== matches) {
       throw new Error('malformed packet data, '+message);
     }else{
