@@ -14,7 +14,7 @@ The library uses https://github.com/voodootikigod/node-serialport for underlying
         <td>0</td><td>Start</td><td>uint8</td><td>1</td><td>0x02</td><td>Signals start of package</td>
     </tr>
     <tr>
-        <td>1</td><td>Receiver</td><td>uint8</td><td>1</td><td>0x01</td><td>Recipient address `0xFF` for broadcast</td>
+        <td>1</td><td>Recipient</td><td>uint8</td><td>1</td><td>0x01</td><td>Recipient address `0xFF` for broadcast</td>
     </tr>
     <tr>
         <td>2</td><td>Sender</td><td>uint8</td><td>1</td><td>0x02</td><td>Sender address `0x00` for master</td>
