@@ -42,3 +42,13 @@ The master device has address `MASTER` or `0x00`.
 ## Error checking
 A very lightweight 8bit checksum is calculated for the header + payload data in the envelope. Packages that aren't valid gets dropped.
 
+## Test
+
+```javascript
+make test
+```
+
+## Install
+```bash
+npm install git+https://github.com/mgunneras/node-serialbuster
+```
