@@ -37,6 +37,7 @@ module.exports.parser = parser = function(recipient, spec) {
   var config = {
       'debug'   : false
     , 'packet_max_size' : PACKET_MAX_SIZE
+    , 'packet_class' : Packet
   };
   _u.extend(config, spec);
   
@@ -76,7 +77,7 @@ module.exports.parser = parser = function(recipient, spec) {
         case CONSTANTS.END:
         
           packetBuffer[position++] = inbyte;
-          var packet = new Packet(config);
+          var packet = new config.packet_class(config);
           position = 0;
           
           try {
