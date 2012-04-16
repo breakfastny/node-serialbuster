@@ -41,16 +41,26 @@ module.exports.parser = parser = function(recipient, spec) {
   
   var packetBuffer = new Buffer(config.packet_max_size);
   var position = 0;
-  var i = 0;
-  var inbyte;
-  var bufferpos = 0;
+  var pre_pend_esc_char = false;
   
   return function(emitter, buffer) {
-    // Collect data
     
+    var bufferpos = 0;
+    
+    // take care of nasty edge case where we need to prepend and escape
+    // char to this buffer since last buffer ended in an escape char.
+    if(pre_pend_esc_char) {
+      var _new_buffer = new Buffer(buffer.length+1, 'hex');
+      _new_buffer[0] = CONSTANTS.ESC;
+      buffer.copy(_new_buffer, 1);
+      buffer = _new_buffer;
+      pre_pend_esc_char = false;
+    }
+
+    // Collect data
     while(bufferpos < buffer.length) {
       
-      inbyte = buffer[bufferpos++];
+      var inbyte = buffer[bufferpos++];
       
       switch(inbyte) {
         
@@ -62,23 +72,37 @@ module.exports.parser = parser = function(recipient, spec) {
           position = 0;
           
           try{
+            // Now we'll see if the packet if valid
             packet.load(packetBuffer);
+            
+            // Emit if right recipient
             if(packet.recipient === recipient || packet.recipient === CONSTANTS.BROADCAST) {
               emitter.emit('packet', packet);
             }else{
               emitter.emit('wrong_recipient', packet);
             }
           }catch(err) {
-            // drop bad packet
             if (config.debug) { console.log('Serialbuster: Incoming: '+err); }
             emitter.emit('bad_data', packetBuffer, err);
           }
           
         break;
         
+        
         // if it's the same code as an ESC character, we'll wait for the next char and see what to do
         case CONSTANTS.ESC:
           
+          // Nasty edge case where this buffer chunk ended in an escape char.
+          // We'll have to bail here and wait for next buffer chunk to come in
+          // and hope for it to have the next buffer char.
+          // we'll have to flag that we want to jump straight here in the beginning of
+          // next incoming buffer, so let's do that now.
+          if(bufferpos === buffer.length) {
+            pre_pend_esc_char = true;
+            break;
+          };
+          
+          // read one more
           inbyte = buffer[bufferpos++];
           
           switch(inbyte) {
