@@ -227,6 +227,7 @@ Packet.prototype.toData = function() {
   outgoing_buffer[0] = CONSTANTS.START;
   var outgoing_buffer_pos = 1;
   
+  // Escape the buffer
   for (var i=1; i < escape_buffer.length; i++) {
     var b = escape_buffer[i];
     switch(b) {

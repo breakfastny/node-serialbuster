@@ -15,6 +15,12 @@ var assert = require('assert');
 suite('Packet Outgoing', function() {
   
   suite('#toData()', function() {
+
+    test('Should return buffer with headers and payload', function() {
+      var p = new Packet();
+      p.setPayload("HELLO");
+      assert.equal(p.toData().length, 5+7);
+    });
     
     test('Should escape END char', function() {
       var p = new Packet();
