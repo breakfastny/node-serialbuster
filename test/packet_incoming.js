@@ -106,17 +106,18 @@ suite('Packet Incoming', function() {
     test('Should emit packet to wrong recipient', function(done) {
     
        var my_address = 0x01;
-       var p = parser(my_address, {debug:1});
+       var p = parser(my_address, {debug:0});
        var e = new EventEmitter();
     
-       var buffer = new Buffer(12, 'hex');
+       var buffer = new Buffer(13, 'hex');
        buffer[0] = CONSTANTS.START;
-       buffer[1] = 0x02; // recipient
-       buffer[2] = 'S'; // sender
-       buffer.writeUInt16LE(5, 3);
-       buffer.write("HELLO", 5);
-       buffer[10] = 0xF0; // crc8
-       buffer[11] = CONSTANTS.END; // end
+       buffer[1] = 0x1B; // recipient (escaped)
+       buffer[2] = 0x1E; // recipient (escaped start 0x02)
+       buffer[3] = 'S'; // sender
+       buffer.writeUInt16LE(5, 4);
+       buffer.write("HELLO", 6);
+       buffer[11] = 0xF0; // crc8
+       buffer[12] = CONSTANTS.END; // end
     
        e.on('packet', function(packet) {
          done('Should not get this');
@@ -139,17 +140,18 @@ suite('Packet Incoming', function() {
      test('Should emit packet to us', function(done) {
     
        var my_address = 0x02;
-       var p = parser(my_address, {debug:1});
+       var p = parser(my_address, {debug:0});
        var e = new EventEmitter();
     
-       var buffer = new Buffer(12, 'hex');
+       var buffer = new Buffer(13, 'hex');
        buffer[0] = CONSTANTS.START;
-       buffer[1] = 0x02; // recipient
-       buffer[2] = 'S'; // sender
-       buffer.writeUInt16LE(5, 3);
-       buffer.write("HELLO", 5);
-       buffer[10] = 0xF0; // crc8
-       buffer[11] = CONSTANTS.END; // end
+       buffer[1] = 0x1B; // recipient (escaped)
+       buffer[2] = 0x1E; // recipient (escaped start 0x02)
+       buffer[3] = 'S'; // sender
+       buffer.writeUInt16LE(5, 4);
+       buffer.write("HELLO", 6);
+       buffer[11] = 0xF0; // crc8
+       buffer[12] = CONSTANTS.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -172,17 +174,18 @@ suite('Packet Incoming', function() {
      test('Should unescape escaped end-character inside payload', function(done) {
     
        var my_address = 0x02;
-       var p = parser(my_address, {debug:1});
+       var p = parser(my_address, {debug:0});
        var e = new EventEmitter();
     
-       var buffer = new Buffer(13, 'hex');
+       var buffer = new Buffer(14, 'hex');
        buffer[0] = CONSTANTS.START;
-       buffer[1] = 0x02; // recipient
-       buffer[2] = 'S'; // sender
-       buffer.writeUInt16LE(5, 3);
-       buffer.write("\x1B\x1CELLO", 5);
-       buffer[11] = 0x69; // crc8
-       buffer[12] = CONSTANTS.END; // end
+       buffer[1] = 0x1B; // recipient (escaped)
+       buffer[2] = 0x1E; // recipient (escaped start 0x02)
+       buffer[3] = 'S'; // sender
+       buffer.writeUInt16LE(5, 4);
+       buffer.write("\x1B\x1CELLO", 6);
+       buffer[12] = 0x69; // crc8
+       buffer[13] = CONSTANTS.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -208,14 +211,15 @@ suite('Packet Incoming', function() {
        var p = parser(my_address, {debug:1});
        var e = new EventEmitter();
     
-       var buffer = new Buffer(15, 'hex');
+       var buffer = new Buffer(16, 'hex');
        buffer[0] = CONSTANTS.START;
-       buffer[1] = 0x02; // recipient
-       buffer[2] = 'S'; // sender
-       buffer.writeUInt16LE(6, 3);
-       buffer.write("\x1B\x1CELLO\x1B\x1C", 5);
-       buffer[13] = 0xDE; // crc8
-       buffer[14] = CONSTANTS.END; // end
+       buffer[1] = 0x1B; // recipient (escaped)
+       buffer[2] = 0x1E; // recipient (escaped start 0x02)
+       buffer[3] = 'S'; // sender
+       buffer.writeUInt16LE(6, 4);
+       buffer.write("\x1B\x1CELLO\x1B\x1C", 6);
+       buffer[14] = 0xDE; // crc8
+       buffer[15] = CONSTANTS.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -241,12 +245,13 @@ suite('Packet Incoming', function() {
       var p = parser(my_address, {debug:1});
       var e = new EventEmitter();
 
-      var buffer1 = new Buffer(13, 'hex');
+      var buffer1 = new Buffer(14, 'hex');
       buffer1[0] = CONSTANTS.START;
-      buffer1[1] = 0x02; // recipient
-      buffer1[2] = 'S'; // sender
-      buffer1.writeUInt16LE(6, 3);
-      buffer1.write("\x1B\x1CELLO\x1B\x1C", 5);
+      buffer1[1] = 0x1B; // recipient (escaped)
+      buffer1[2] = 0x1E; // recipient (escaped start 0x02)
+      buffer1[3] = 'S'; // sender
+      buffer1.writeUInt16LE(6, 4);
+      buffer1.write("\x1B\x1CELLO\x1B\x1C", 6);
       
       var buffer2 = new Buffer(2, 'hex');
       buffer2[0] = 0xDE; // crc8
@@ -277,12 +282,13 @@ suite('Packet Incoming', function() {
       var p = parser(my_address, {debug:1});
       var e = new EventEmitter();
     
-      var buffer1 = new Buffer(12, 'hex');
+      var buffer1 = new Buffer(13, 'hex');
       buffer1[0] = CONSTANTS.START;
-      buffer1[1] = 0x02; // recipient
-      buffer1[2] = 'S'; // sender
-      buffer1.writeUInt16LE(6, 3);
-      buffer1.write("\x1B\x1CELLO\x1B", 5);
+      buffer1[1] = 0x1B; // recipient (escaped)
+      buffer1[2] = 0x1E; // recipient (escaped start 0x02)
+      buffer1[3] = 'S'; // sender
+      buffer1.writeUInt16LE(6, 4);
+      buffer1.write("\x1B\x1CELLO\x1B", 6);
       
       var buffer2 = new Buffer(3, 'hex');
       buffer2[0] = 0x1C;

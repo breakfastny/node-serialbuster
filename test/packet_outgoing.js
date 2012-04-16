@@ -14,6 +14,15 @@ var assert = require('assert');
 
 suite('Packet Outgoing', function() {
   
-  
+  suite('#toData()', function() {
+    
+    test('Should done some', function(done) {
+      var p = new Packet();
+      p.setPayload("H\x03ELLO");
+      assert.equal(p.toData(), 1);
+      done();
+    });
+    
+  });
   
 });

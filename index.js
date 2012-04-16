@@ -20,6 +20,7 @@ module.exports.CONSTANTS = CONSTANTS = {
   , END                   : 0x03
   , ESC_END               : 0x1C
   , ESC_ESC               : 0x1D
+  , ESC_START             : 0x1E
   , BROADCAST             : 0xFF
   , MASTER                : 0x00
 };
@@ -41,7 +42,7 @@ module.exports.parser = parser = function(recipient, spec) {
   
   var packetBuffer = new Buffer(config.packet_max_size);
   var position = 0;
-  var pre_pend_esc_char = false;
+  var prepend_esc_char = false;
   
   return function(emitter, buffer) {
     
@@ -49,12 +50,12 @@ module.exports.parser = parser = function(recipient, spec) {
     
     // take care of nasty edge case where we need to prepend and escape
     // char to this buffer since last buffer ended in an escape char.
-    if(pre_pend_esc_char) {
+    if(prepend_esc_char) {
       var _new_buffer = new Buffer(buffer.length+1, 'hex');
       _new_buffer[0] = CONSTANTS.ESC;
       buffer.copy(_new_buffer, 1);
       buffer = _new_buffer;
-      pre_pend_esc_char = false;
+      prepend_esc_char = false;
     }
 
     // Collect data
@@ -62,7 +63,15 @@ module.exports.parser = parser = function(recipient, spec) {
       
       var inbyte = buffer[bufferpos++];
       
-      switch(inbyte) {
+      switch(inbyte) {          
+        
+        
+        // We're starting a new packet
+        case CONSTANTS.START:
+          position = 0;
+          packetBuffer[position++] = inbyte;
+        break;
+        
         
         // if it's an END character then we're done with the packet
         case CONSTANTS.END:
@@ -71,7 +80,7 @@ module.exports.parser = parser = function(recipient, spec) {
           var packet = new Packet(config);
           position = 0;
           
-          try{
+          try {
             // Now we'll see if the packet if valid
             packet.load(packetBuffer);
             
@@ -98,7 +107,7 @@ module.exports.parser = parser = function(recipient, spec) {
           // we'll have to flag that we want to jump straight here in the beginning of
           // next incoming buffer, so let's do that now.
           if(bufferpos === buffer.length) {
-            pre_pend_esc_char = true;
+            prepend_esc_char = true;
             break;
           };
           
@@ -114,6 +123,9 @@ module.exports.parser = parser = function(recipient, spec) {
              */
             case CONSTANTS.ESC_END:
               inbyte = CONSTANTS.END;
+            break;
+            case CONSTANTS.ESC_START:
+              inbyte = CONSTANTS.START;
             break;
             case CONSTANTS.ESC_ESC:
               inbyte = CONSTANTS.ESC;
@@ -142,8 +154,8 @@ module.exports.Packet = Packet = function(spec) {
   this.sender = this.config.sender;
   this.recipient = this.config.recipient;
   
-  this.buffer = new Buffer(this.config.packet_max_size);
-  this.position = 0;
+  //this.buffer = new Buffer(this.config.packet_max_size);
+  //this.position = 0;
 };
 
 // Takes a buffer object of raw incoming data
@@ -179,12 +191,27 @@ Packet.prototype.load = function(incoming) {
   return true;
 };
 
-// Returns raw escaped data for transmission
+// Set's the string or buffer as payload
+Packet.prototype.setPayload = function (data) {
+  if (!Buffer.isBuffer(data)) {
+    data = new Buffer(data);
+  }
+  this.payload = data;
+};
+
+// Returns escaped data for transmission
 Packet.prototype.toData = function() {
-  var buffer = new Buffer(this.config.packet_max_size);
-  buffer[0] = CONSTANTS.START;
-  buffer[1] = this.recipient;
-  buffer[2] = this.sender;
+  var pre_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE - 1);
+  pre_buffer[0] = this.recipient;
+  pre_buffer[1] = this.sender;
+  pre_buffer.writeInt16LE(this.payload.length, 3);
+  this.payload.copy(pre_buffer, PACKET_HEADER_SIZE);
+  
+  // calculate final size of packet including escaped chars
+  var length = _u.filter(pre_buffer, function (item) {
+    return (item == CONSTANTS.ESC || item == CONSTANTS.END || item == CONSTANTS.START);
+  });
+  console.log(length);
 };
 
 Packet.prototype.crc8 = function(buffer, length) {
