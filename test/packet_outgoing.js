@@ -56,19 +56,20 @@ suite('Packet Outgoing', function() {
     test('Should output buffer valid for parser input', function(done) {
       var packet = new Packet();
       packet.setPayload("YO");
+      packet.recipient = 3;
       
-      var par = parser(0x02, {debug:1});
+      var par = parser(3);
       var e = new EventEmitter();
       
-      e.on('packet', function(packet) {
+      e.on('packet', function(pack) {
         done(); // this is what we want
       });
 
-      e.on('bad_data', function(packet, err) {
+      e.on('bad_data', function(pack, err) {
         done(err);
       });
 
-      e.on('wrong_recipient', function(packet) {
+      e.on('wrong_recipient', function(pack) {
         done(new Error('Wrong recipient'));
       });
       
