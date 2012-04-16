@@ -64,11 +64,11 @@ suite('Packet Outgoing', function() {
       e.on('packet', function(pack) {
         done(); // this is what we want
       });
-
+      
       e.on('bad_data', function(pack, err) {
         done(err);
       });
-
+      
       e.on('wrong_recipient', function(pack) {
         done(new Error('Wrong recipient'));
       });

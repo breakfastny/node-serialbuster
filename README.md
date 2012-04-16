@@ -40,7 +40,7 @@ To send a message to all listening clients use the `BROADCAST` address `0xFF`.
 The master device has address `MASTER` or `0x00`.
 
 ## Error checking
-A very lightweight 8bit checksum is calculated for the header + payload data in the envelope. Packages that aren't valid gets dropped.
+A very lightweight 8bit checksum is calculated for the header + payload data in the envelope. Packages that aren't valid gets dropped. CRC8 is calculated before the packet contents have be escaped. Everything but the start and end bytes are escaped.
 
 ## Test
 
