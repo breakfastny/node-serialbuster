@@ -6,7 +6,7 @@ var SerialPort = require("serialport").SerialPort
 
 // Protocol structure:
 //  START     1byte (uint8)
-//  ADDRESS   1byte (uint8)
+//  RECEIVER  1byte (uint8)
 //  SENDER    1byte (uint8)
 //  LENGTH    2byte (uint16)
 //  PAYLOAD   Nbyte
@@ -27,7 +27,6 @@ module.exports.CONSTANTS = CONSTANTS = {
 var PACKET_MAX_SIZE       = 2048;
 var ENVELOPE_SIZE         = 7;
 var PACKET_HEADER_SIZE    = 5;
-
 
 // Parser for SerialPort
 module.exports.parser = parser = function(receiver, spec) {
@@ -131,12 +130,12 @@ Packet.prototype.load = function(buffer) {
     
   var assert = function (str, matches, message) {
     if (str !== matches) {
-      throw new Error('malformed packet data, '+message);
+      throw new Error('malformed packet data, ' + message);
     }else{
       return true;
     }
   }
-    
+  
   // tests for valid packet data
   assert(this.buffer.readUInt8(0), CONSTANTS.START, 'Start byte');
   assert(this.buffer.readUInt8(this.buffer.length-1), CONSTANTS.END, 'End byte');
