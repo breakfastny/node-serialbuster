@@ -136,18 +136,20 @@ Packet.prototype.load = function(buffer) {
       return true;
     }
   }
-  
+    
+  // tests for valid packet data
   assert(this.buffer.readUInt8(0), CONSTANTS.START, 'Start byte');
   assert(this.buffer.readUInt8(this.buffer.length-1), CONSTANTS.END, 'End byte');
-  assert(this.buffer.readUInt8(this.buffer.length-2), this.crc8(this.payload), 'Checksum');
-  assert(this.buffer.readUInt8(PACKET_HEADER_SIZE+payload_length+1), CONSTANTS.END, 'Length');
+  assert(this.buffer.readUInt8(this.buffer.length-2), this.crc8(this.buffer, PACKET_HEADER_SIZE + payload_length), 'Checksum');
+  assert(this.buffer.readUInt8(PACKET_HEADER_SIZE + payload_length + 1), CONSTANTS.END, 'Length');
   
   return true;
 };
 
-Packet.prototype.crc8 = function(buffer) {
+Packet.prototype.crc8 = function(buffer, length) {
+  length = length ? length : buffer.length;
   var i,j,inbyte,mix,crc = 0;
-  for(i=0;i<buffer.length;i++){
+  for(i=0;i<length;i++){
     inbyte = buffer[i];
     for(j=0;j<8;j++){
       mix = (crc ^ inbyte) & 0x01;

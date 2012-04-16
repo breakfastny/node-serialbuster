@@ -24,7 +24,7 @@ suite('Packet', function() {
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
-      buffer[10] = 0xED; // crc8
+      buffer[10] = 0xA1; // crc8
       buffer[11] = CONSTANTS.END; // end
       var result = p.load(buffer, buffer.length);
       assert.equal(result, true);
@@ -38,7 +38,7 @@ suite('Packet', function() {
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
-      buffer[10] = 0xED; // crc8
+      buffer[10] = 0xA1; // crc8
       buffer[11] = CONSTANTS.END; // end
       
       assert.throws(function() {
@@ -54,7 +54,7 @@ suite('Packet', function() {
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
-      buffer[10] = 0xED; // crc8
+      buffer[10] = 0xA1; // crc8
       buffer[11] = '!'; // end
       
       assert.throws(function() {
@@ -70,10 +70,10 @@ suite('Packet', function() {
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
-      buffer[10] = 0xEE; // crc8
+      buffer[10] = 0xA2; // crc8
       buffer[11] = CONSTANTS.END; // end
       
-      assert.throws(function(){
+      assert.throws(function() {
         p.load(buffer, buffer.length);
       });
     });
@@ -86,7 +86,7 @@ suite('Packet', function() {
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(6, 3);
       buffer.write("HELLO", 5);
-      buffer[10] = 0xED; // crc8
+      buffer[10] = 0xA1; // crc8
       buffer[11] = CONSTANTS.END; // end
       
       assert.throws(function() {
