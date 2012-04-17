@@ -29,11 +29,28 @@ var PACKET_MAX_SIZE       = 10240;
 var ENVELOPE_SIZE         = 7;
 var PACKET_HEADER_SIZE    = 5;
 
+
+// Main interface with serial port
+module.exports.SerialBuster = SerialBuster = function(port, spec) {
+  SerialPort.call(this, port, spec);
+};
+util.inherits(SerialBuster, SerialPort);
+SerialPort.prototype.sendPacket = function(packet) {
+  var self = this;
+  var outbuffer = packet.toData();
+  // this.write(outbuffer.slice(0, 32));
+  // setTimeout(function() {
+  //   self.write(outbuffer.slice(32));
+  // }, 65);
+  self.write(outbuffer);
+};
+
+
 // Parser for SerialPort
 module.exports.parser = parser = function(recipient, spec) {
   if(recipient == undefined || recipient === null)
     throw new Error("You have to supply the clients address");
-    
+  
   var config = {
       'debug'   : false
     , 'packet_max_size' : PACKET_MAX_SIZE
@@ -47,8 +64,11 @@ module.exports.parser = parser = function(recipient, spec) {
   
   return function(emitter, buffer) {
     
-    var bufferpos = 0;
+    // keep raw working
+    emitter.emit('data', buffer);
     
+    var bufferpos = 0;
+        
     // take care of nasty edge case where we need to prepend and escape
     // char to this buffer since last buffer ended in an escape char.
     if(prepend_esc_char) {
@@ -64,7 +84,8 @@ module.exports.parser = parser = function(recipient, spec) {
       
       var inbyte = buffer[bufferpos++];
       
-      switch(inbyte) {          
+      switch(inbyte) {
+        
         
         // We're starting a new packet
         case CONSTANTS.START:
@@ -153,9 +174,13 @@ module.exports.Packet = Packet = function(spec) {
   _u.extend(this.config, spec);
   this.sender = this.config.sender;
   this.recipient = this.config.recipient;
-  
-  //this.buffer = new Buffer(this.config.packet_max_size);
-  //this.position = 0;
+  if(this.config.payload !== null) {
+    this.setPayload(this.config.payload);
+  }
+  this.toString = function () {
+    var cont = this.payload ? this.payload.toString() : 'empty';
+    return "<Packet "+cont+">";
+  };
 };
 
 // Takes a buffer object of raw incoming data
