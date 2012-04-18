@@ -42,13 +42,38 @@ The master device has address `MASTER` or `0x00`.
 ## Error checking
 A very lightweight 8bit checksum is calculated for the header + payload data in the envelope. Packages that aren't valid gets dropped. CRC8 is calculated before the packet contents have be escaped. Everything but the start and end bytes are escaped.
 
-## Test
+## Send packet
 
 ```javascript
-make test
+var serialbuster = require('serialbuster');
+
+var my_node_address = serialbuster.CONSTANTS.MASTER;
+
+var serial = new serialbuster.SerialBuster('/dev/tty.usbserial-A800f7Vn', {
+    'baudrate' : 9600
+  , 'parser' : serialbuster.parser(my_node_address)
+  , 'buffersize' : 1024
+});
+
+// Give the serial connection some time to 
+// get established after it's first created
+setTimeout(function() {
+  var packet = new serialbuster.Packet({
+      'recipient' : serialbuster.CONSTANTS.BROADCAST // send to all nodes
+    , 'sender' : my_node_address
+  });
+  packet.setPayload("Hello everyone! \n\nlove master");
+  serial.sendPacket(packet);
+}, 2000);
 ```
 
 ## Install
 ```bash
 npm install git+https://github.com/mgunneras/node-serialbuster
+```
+
+## Test
+
+```javascript
+make test
 ```
