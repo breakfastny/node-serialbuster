@@ -28,6 +28,7 @@ var serial = new sb.SerialBuster(argv.p, {
 });
 
 serial.on('packet', function (packet) {
+  
   if (argv.stream) {
     process.stdout.write(packet.payload);
   } else {
@@ -40,12 +41,10 @@ serial.on('packet', function (packet) {
   }
   
   if (argv.echo) {
-    // setTimeout(function (){
-      from = packet.sender;
-      packet.sender = packet.recipient;
-      packet.recipient = from;
-      send(packet);
-    // }, 1000);
+    from = packet.sender;
+    packet.sender = packet.recipient;
+    packet.recipient = from;
+    send(packet);
   }
   
 });
@@ -73,12 +72,7 @@ setTimeout(function() {
   packet.recipient = parseInt(argv.r, 10);
   
   send(packet);
-  
-  // setInterval(function() {
-  //   send(packet);
-  // }, 500);
-
-  
+    
 }, 1500);
 
 var send = function (packet) {
