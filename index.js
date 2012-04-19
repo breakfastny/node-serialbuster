@@ -124,9 +124,7 @@ module.exports.parser = parser = function(recipient, spec) {
           
           // Nasty edge case where this buffer chunk ended in an escape char.
           // We'll have to bail here and wait for next buffer chunk to come in
-          // and hope for it to have the next buffer char.
-          // we'll have to flag that we want to jump straight here in the beginning of
-          // next incoming buffer, so let's do that now.
+          // and hope for it to have the escaped char.
           if(bufferpos === buffer.length) {
             prepend_esc_char = true;
             break;

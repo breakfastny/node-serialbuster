@@ -39,12 +39,15 @@ serial.on('packet', function (packet) {
       };
     }
   }
-  
+
   if (argv.echo) {
     from = packet.sender;
     packet.sender = packet.recipient;
     packet.recipient = from;
-    send(packet);
+    setTimeout(function(){
+      send(packet);
+    }, 20);
+    
   }
   
 });
@@ -81,4 +84,3 @@ var send = function (packet) {
   
   serial.sendPacket(packet);
 }
-
