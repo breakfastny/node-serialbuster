@@ -32,7 +32,7 @@ serial.on('packet', function (packet) {
     console.log('Recived packet to: '+packet.recipient+' from: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
     if (argv.v) {
       for (var i=0; i < packet.payload.length; i++) {
-        console.log('after unescape: ascii: '+String.fromCharCode(packet.payload[i])+' hex: '+packet.payload[i]);
+        console.log('after unescape: ascii: '+String.fromCharCode(packet.payload[i])+' dec: '+packet.payload[i]);
       };
     }
   }
@@ -41,7 +41,7 @@ serial.on('packet', function (packet) {
 if (argv.v) {
   serial.on('data', function (buffer) {
     for (var i=0; i < buffer.length; i++) {
-      console.log('before unescape: ascii: '+String.fromCharCode(buffer[i])+' hex: '+buffer[i]);
+      console.log('before unescape: ascii: '+String.fromCharCode(buffer[i])+' dec: '+buffer[i]);
     };
   });
 }

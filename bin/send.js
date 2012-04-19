@@ -3,10 +3,10 @@ var serialport = require("serialport");
 var sb = require('..');
 var fs = require('fs');
 var argv = require('optimist')
-    .usage('Usage: $0 -p [serialport] -b [baud] -r [recipient] -s [sender] -m [message] -v [verbose] [--stream]')
-    .boolean(['stream'])
+    .usage('Usage: $0 -p [serialport] -b [baud] -r [recipient] -s [sender] -m [message] -v [verbose] [--stream] [--echo]')
+    .boolean(['stream', 'echo'])
     .default({
-        'b' : 9600
+        'b' : 57600
       , 'r' : sb.CONSTANTS.BROADCAST
       , 's' : sb.CONSTANTS.MASTER
       , 'm' : 'Hello World!'
@@ -23,25 +23,38 @@ if (argv.v) {
 
 var serial = new sb.SerialBuster(argv.p, {
     'baudrate' : parseInt(argv.b, 10)
-  , 'parser' : sb.parser(0, {debug:true})  
+  , 'parser' : sb.parser(parseInt(argv.s, 10), {debug:true})  
   , 'buffersize' : 1024
 });
 
 serial.on('packet', function (packet) {
   if (argv.stream) {
     process.stdout.write(packet.payload);
-  }else{
-    console.log('Recived packet to: '+packet.recipient+' from: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
+  } else {
+    console.log('Recived packet - recipient: '+packet.recipient+' sender: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
+    if (argv.v) {
+      for (var i=0; i < packet.payload.length; i++) {
+        console.log('after unescape: ascii: '+String.fromCharCode(packet.payload[i])+' dec: '+packet.payload[i]);
+      };
+    }
   }
+  
+  if (argv.echo) {
+    // setTimeout(function (){
+      from = packet.sender;
+      packet.sender = packet.recipient;
+      packet.recipient = from;
+      send(packet);
+    // }, 1000);
+  }
+  
 });
 
 if (argv.v) {
   serial.on('data', function (buffer) {
-    process.stdout.write('Recived buffer: ')
     for (var i=0; i < buffer.length; i++) {
-      process.stdout.write(String.fromCharCode(buffer[i]));
+      console.log('Recived raw data, ascii: '+String.fromCharCode(buffer[i])+' dec: '+buffer[i]);
     };
-    process.stdout.write("\n");
   });
 }
 
@@ -57,11 +70,21 @@ setTimeout(function() {
   }
   
   packet.sender = parseInt(argv.s, 10);
-  packet.recepient = parseInt(argv.r, 10);
+  packet.recipient = parseInt(argv.r, 10);
   
+  send(packet);
+  
+  // setInterval(function() {
+  //   send(packet);
+  // }, 500);
+
+  
+}, 1500);
+
+var send = function (packet) {
   if (!argv.stream)
-    console.log('Sending packet to: '+packet.recipient+' from: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
+    console.log('Sending packet - recipient: '+packet.recipient+' sender: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
   
   serial.sendPacket(packet);
-    
-}, 1500);
+}
+
