@@ -6,7 +6,6 @@
   , "dependencies": {
         "serialport": "git+https://github.com/voodootikigod/node-serialport.git#173b9ffb6cff2fd506aa534834133957ce0bd6a3"
       , "underscore" : "1.3.1"
-
     }
   , "devDependencies": {
         "mocha": "*"

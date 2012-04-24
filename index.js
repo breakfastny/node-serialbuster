@@ -9,7 +9,7 @@ var SerialPort = require("serialport").SerialPort
 //  RECIPIENT 1byte (uint8)
 //  SENDER    1byte (uint8)
 //  LENGTH    2byte (uint16)
-//  PAYLOAD   Nbyte
+//  PAYLOAD   Nbytes (N=LENGTH)
 //  CRC8      1byte (uint8)
 //  END       1byte (uint8)
 
@@ -32,18 +32,51 @@ var PACKET_HEADER_SIZE    = 5;
 
 // Main interface with serial port
 module.exports.SerialBuster = SerialBuster = function(port, spec) {
-  SerialPort.call(this, port, spec);
+  this.config = {
+      'remote_buffer_size' : 63 // byte size of smallest remote buffer
+    , 'chunk_delay' : 15 // ms of delay between chunk transmission
+  };
+  _u.extend(this.config, spec);
+  this.queue = [];
+  this.sendNextChunk = _u.throttle(this._sendNextChunk, this.config.chunk_delay);
+  this.interval = null;
+  SerialPort.call(this, port, this.config);
+  _u.bindAll(this, '_sendNextChunk', 'sendNextChunk');
 };
 util.inherits(SerialBuster, SerialPort);
+
 SerialPort.prototype.sendPacket = function(packet) {
-  var self = this;
   var outbuffer = packet.toData();
-  // this.write(outbuffer.slice(0, 32));
-  // setTimeout(function() {
-  //   self.write(outbuffer.slice(32));
-  // }, 65);
-  self.write(outbuffer);
+  // this.write(outbuffer);
+  // return;
+  var numberOfChunks = Math.ceil(outbuffer.length / this.config.remote_buffer_size);
+  var count = 0;
+  var byteIndex = 0;
+  while(count++ < numberOfChunks){
+    if((byteIndex + this.config.remote_buffer_size) < outbuffer.length) {
+      var endIndex = byteIndex + this.config.remote_buffer_size;
+    }else{
+      var endIndex = outbuffer.length;
+    }
+    this.queue.push(outbuffer.slice(byteIndex, endIndex));
+    byteIndex = endIndex;
+  }
+  this.sendNextChunk();
+  if(this.queue.length > 0 && this.interval == null) {
+    this.interval = setInterval(this.sendNextChunk, this.config.chunk_delay+2);
+  }
 };
+
+SerialPort.prototype._sendNextChunk = function () {
+  if(this.queue.length > 0) {
+    var data = this.queue.shift();
+    this.write(data);
+  }else{
+    clearInterval(this.interval);
+    this.interval = null;
+  }
+}
+
 
 
 // Parser for SerialPort
@@ -160,6 +193,7 @@ module.exports.parser = parser = function(recipient, spec) {
     }
   }
 };
+
 
 // Packet
 module.exports.Packet = Packet = function(spec) {
@@ -288,7 +322,7 @@ Packet.prototype.crc8 = function(buffer, length) {
     for(j=0;j<8;j++){
       mix = (crc ^ inbyte) & 0x01;
       crc >>= 1;
-      if(mix){
+      if(mix) {
         crc ^= 0x8C;
       }
       inbyte >>= 1;

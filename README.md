@@ -62,7 +62,7 @@ setTimeout(function() {
       'recipient' : serialbuster.CONSTANTS.BROADCAST // send to all nodes
     , 'sender' : my_node_address
   });
-  packet.setPayload("Hello everyone! \n\nlove master");
+  packet.setPayload("Hello everyone! \n\nlove, master");
   serial.sendPacket(packet);
 }, 2000);
 ```

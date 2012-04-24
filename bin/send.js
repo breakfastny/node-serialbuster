@@ -25,6 +25,8 @@ var serial = new sb.SerialBuster(argv.p, {
     'baudrate' : parseInt(argv.b, 10)
   , 'parser' : sb.parser(parseInt(argv.s, 10), {debug:true})  
   , 'buffersize' : 1024
+  , 'remote_buffer_size' : 63
+  , 'chunk_delay' : 15
 });
 
 serial.on('packet', function (packet) {
@@ -47,7 +49,6 @@ serial.on('packet', function (packet) {
     setTimeout(function(){
       send(packet);
     }, 20);
-    
   }
   
 });
@@ -75,6 +76,15 @@ setTimeout(function() {
   packet.recipient = parseInt(argv.r, 10);
   
   send(packet);
+  // send(packet);
+  // send(packet);
+  // send(packet);
+  // send(packet);
+  // setTimeout(function(){
+  //   send(packet);
+  // }, 20)
+  
+  
     
 }, 1500);
 
