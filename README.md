@@ -69,7 +69,7 @@ setTimeout(function() {
 
 ## Install
 ```bash
-npm install git+https://github.com/mgunneras/node-serialbuster
+npm install git+https://github.com/breakfastny/node-serialbuster
 ```
 
 ## Test
