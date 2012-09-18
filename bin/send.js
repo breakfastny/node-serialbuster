@@ -69,24 +69,14 @@ setTimeout(function() {
     var payload = fs.readFileSync('/dev/stdin').toString();
     packet.setPayload(payload);
   }else{
-    packet.setPayload(argv.m);
+    packet.setPayload(1);
   }
   
   packet.sender = parseInt(argv.s, 10);
   packet.recipient = parseInt(argv.r, 10);
   
   send(packet);
-  // send(packet);
-  // send(packet);
-  // send(packet);
-  // send(packet);
-  // setTimeout(function(){
-  //   send(packet);
-  // }, 20)
-  
-  
-    
-}, 1500);
+}, 500);
 
 var send = function (packet) {
   if (!argv.stream)
