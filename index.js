@@ -251,7 +251,7 @@ Packet.prototype.load = function(incoming) {
 // Set's the string or buffer as payload
 Packet.prototype.setPayload = function (data) {
   if (!Buffer.isBuffer(data)) {
-    data = new Buffer(data);
+    data = new Buffer(data.toString(), 'ascii');
   }
   this.payload = data;
 };
