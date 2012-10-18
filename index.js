@@ -47,8 +47,6 @@ util.inherits(SerialBuster, SerialPort);
 
 SerialPort.prototype.sendPacket = function(packet) {
   var outbuffer = packet.toData();
-  // this.write(outbuffer);
-  // return;
   var numberOfChunks = Math.ceil(outbuffer.length / this.config.remote_buffer_size);
   var count = 0;
   var byteIndex = 0;
@@ -309,6 +307,7 @@ Packet.prototype.toData = function() {
 
   // add the final end byte
   outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.END;
+  //console.log(outgoing_buffer)
   
   return outgoing_buffer;
   

@@ -2,7 +2,7 @@ var serialbuster = require('..');
 
 var my_node_address = serialbuster.CONSTANTS.MASTER;
 
-var serial = new serialbuster.SerialBuster('/dev/tty.usbserial-A100et1Z', {
+var serial = new serialbuster.SerialBuster('/dev/tty.usbserial-A800f7Vn', {
     'baudrate' : 9600
   , 'parser' : serialbuster.parser(my_node_address)
   , 'buffersize' : 1024

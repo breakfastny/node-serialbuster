@@ -6,7 +6,7 @@ var argv = require('optimist')
     .usage('Usage: $0 -p [serialport] -b [baud] -r [recipient] -s [sender] -m [message] -v [verbose] [--stream] [--echo]')
     .boolean(['stream', 'echo'])
     .default({
-        'b' : 57600
+        'b' : 9600
       , 'r' : sb.CONSTANTS.BROADCAST
       , 's' : sb.CONSTANTS.MASTER
       , 'm' : 'Hello World!'
@@ -50,7 +50,7 @@ serial.on('packet', function (packet) {
       send(packet);
     }, 20);
   }
-  
+
 });
 
 if (argv.v) {
@@ -63,24 +63,28 @@ if (argv.v) {
 
 setTimeout(function() {
   var packet = new sb.Packet();
-  
+
   // read from stdin
   if (argv.stream) {
     var payload = fs.readFileSync('/dev/stdin').toString();
     packet.setPayload(payload);
   }else{
-    packet.setPayload(1);
+    var buf = new Buffer(1);
+    buf.writeUInt8(0x26, 0);
+    packet.setPayload(buf);
+    console.log(buf);
   }
-  
+
   packet.sender = parseInt(argv.s, 10);
   packet.recipient = parseInt(argv.r, 10);
-  
+
   send(packet);
-}, 500);
+  //process.exit();
+}, 1500);
 
 var send = function (packet) {
   if (!argv.stream)
     console.log('Sending packet - recipient: '+packet.recipient+' sender: '+packet.sender+' payload: "'+packet.payload+'" length: '+packet.toData().length);
-  
+
   serial.sendPacket(packet);
 }
