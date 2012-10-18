@@ -93,6 +93,20 @@ var tests = [
     b.writeFloatLE(-39172.3971, 0);
     return b;
   }()),
+
+
+  // TEST 9
+  // char
+  (function() {
+    return new Buffer("a", "ascii");
+  }()),
+
+  // TEST 10 
+  // char
+  (function() {
+    return new Buffer("ab!", "ascii");
+  }()),
+
 ];
 
 
