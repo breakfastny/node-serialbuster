@@ -3,11 +3,18 @@ var EventEmitter = require("events").EventEmitter
   , _u = require('underscore')
   , PROTOCOL = require('./libs/protocol')
   , parser = require('./libs/parser')
+  , SerialTransport = require('./libs/transport/serial')
+  , TCPTransport = require('./libs/transport/tcp')
 ;
 
 
 var ENVELOPE_SIZE         = 7;
 var PACKET_HEADER_SIZE    = 5;
+
+// expose transports to world
+module.exports.SerialTransport = SerialTransport;
+module.exports.TCPTransport = TCPTransport;
+module.exports.PROTOCOL = PROTOCOL;
 
 
 // Main interface

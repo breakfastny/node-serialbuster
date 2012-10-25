@@ -8,7 +8,7 @@ var net = require('net')
 module.exports = TCPTransport = function (port, spec) {
   var self = this;
   this.port = port;
-  this.host = spec && spec.host || '0.0.0.0';
+  this.host = spec && spec.host || '127.0.0.1';
   this.socket = new net.Socket();
   this.socket.connect(this.port, this.host, function(){
     self.emit('open');
