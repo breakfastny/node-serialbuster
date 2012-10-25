@@ -4,21 +4,18 @@ var colors  = require("colors");
 var _u = require('underscore');
 var sb = require('..');
 var SerialTransport = require('../libs/transport/serial');
+var TCPTransport = require('../libs/transport/tcp');
 var PROTOCOL = require('../libs/protocol');
 var fs = require('fs');
 var argv = require('optimist')
-    .usage('Usage: $0 -p [serialport] -b [baud] -v [verbose]')
-    .boolean(['stream', 'echo'])
+    .usage('Usage: $0 -p [port] -b [baud] -v [verbose] [--tcp]')
+    .boolean(['tcp'])
     .default({
         'b' : 9600
+      , 'tcp' : false
     })
     .demand(['p'])
     .argv;
-
-console.log("Opening connection to:");
-console.log("Port: " + argv.p);
-console.log("Baud: " + argv.b);
-console.log("");
 
 var logRed = function (txt) { console.log(txt.red) };
 var logGreen = function (txt) { console.log(txt.green) };
@@ -118,28 +115,37 @@ var TestSuite = function () {
   _u.bindAll(this, 'onPacket');
 };
 
-TestSuite.prototype.init = function (port, baud, tests) {
+TestSuite.prototype.init = function (port, baud, tests, tcp) {
   this.tests = tests;
   this.testCase = 0;
-  var transport = new SerialTransport(port, {
-      'baudrate' : baud
-  });
-  this.serial = new sb.SerialBuster(transport, {
+  if(tcp) {
+    var transport = new TCPTransport(port);
+  }else{
+    var transport = new SerialTransport(port, {
+        'baudrate' : baud
+    });
+  }
+  this.buster = new sb.SerialBuster(transport, {
       'address' : PROTOCOL.MASTER
     , 'buffersize' : 1024
     , 'remote_buffer_size' : 63
   });
-  this.serial.on('packet', this.onPacket);
+  transport.on('open', function (){
+    logGreen('Transport opened');
+  });
+  transport.on('error', function(err) {
+    console.log(err);
+  });
+  transport.on('close', function() {
+    logRed('Transport closed');
+  });
+  this.buster.on('packet', this.onPacket);
 };
 
 TestSuite.prototype.onPacket = function (packet) {
   logBlue( 'Recived packet - full length: '+
               packet.toData().length+' payload length: '+
               packet.payload.length+ ' payload: '+packet.payload.toString('hex'));
-
-  try{
-    //console.log(packet.payload);
-  }catch(e){}
 
   var rspNumber = packet.payload.readInt16LE(0);
   switch(rspNumber) {
@@ -174,12 +180,9 @@ TestSuite.prototype.next = function () {
 
 TestSuite.prototype.send = function (buffer) {
   var packet = new sb.Packet({'payload' : buffer});
-  //logBlue( 'Sending packet - full length: '+
-              //packet.toData().length+' payload length: '+
-              //packet.payload.length);
-  this.serial.sendPacket(packet);
+  this.buster.sendPacket(packet);
 };
 
 // RUN IT
 var testSuite = new TestSuite();
-testSuite.init(argv.p, parseInt(argv.b, 10), tests);
+testSuite.init(argv.p, parseInt(argv.b, 10), tests, argv.tcp);

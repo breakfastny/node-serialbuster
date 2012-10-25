@@ -21,11 +21,12 @@ module.exports.SerialBuster = SerialBuster = function(transport, spec) {
     , 'debug' : false 
   };
   _u.extend(this.config, spec);
-  this.queue = [];
+  this.queue = []; // buffer storage to send
   this.sendNextChunk = _u.throttle(this._sendNextChunk, this.config.chunk_delay);
   this.interval = null;
   _u.bindAll(this, '_sendNextChunk', 'sendNextChunk');
-
+  
+  // once the transport is open, we can set our parser
   this.transport.once('open', function() {
     self.transport.setParser(parser(self.config.address, {
         'debug' : self.config.debug
