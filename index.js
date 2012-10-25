@@ -1,51 +1,53 @@
-var SerialPort = require("serialport").SerialPort
-  , EventEmitter = require("events").EventEmitter
+var EventEmitter = require("events").EventEmitter
   , util = require("util")
   , _u = require('underscore')
+  , PROTOCOL = require('./libs/protocol')
+  , parser = require('./libs/parser')
 ;
 
-// Protocol structure:
-//  START     1byte (uint8)
-//  RECIPIENT 1byte (uint8)
-//  SENDER    1byte (uint8)
-//  LENGTH    2byte (uint16)
-//  PAYLOAD   Nbytes (N=LENGTH)
-//  CRC8      1byte (uint8)
-//  END       1byte (uint8)
 
-// Protocol constants
-module.exports.CONSTANTS = CONSTANTS = {
-    START                 : 0x02
-  , ESC                   : 0x1B
-  , END                   : 0x03
-  , ESC_END               : 0x1C
-  , ESC_ESC               : 0x1D
-  , ESC_START             : 0x1E
-  , BROADCAST             : 0xFF
-  , MASTER                : 0x00
-};
-
-var PACKET_MAX_SIZE       = 10240;
 var ENVELOPE_SIZE         = 7;
 var PACKET_HEADER_SIZE    = 5;
 
 
-// Main interface with serial port
-module.exports.SerialBuster = SerialBuster = function(port, spec) {
+// Main interface
+module.exports.SerialBuster = SerialBuster = function(transport, spec) {
+  var self = this;
+  this.transport = transport;
   this.config = {
-      'remote_buffer_size' : 63 // byte size of smallest remote buffer
+      'address' : PROTOCOL.MASTER // my address
+    , 'remote_buffer_size' : 63 // byte size of smallest remote buffer
     , 'chunk_delay' : 15 // ms of delay between chunk transmission
+    , 'debug' : false 
   };
   _u.extend(this.config, spec);
   this.queue = [];
   this.sendNextChunk = _u.throttle(this._sendNextChunk, this.config.chunk_delay);
   this.interval = null;
-  SerialPort.call(this, port, this.config);
   _u.bindAll(this, '_sendNextChunk', 'sendNextChunk');
-};
-util.inherits(SerialBuster, SerialPort);
 
-SerialPort.prototype.sendPacket = function(packet) {
+  this.transport.once('open', function() {
+    self.transport.setParser(parser(self.config.address, {
+        'debug' : self.config.debug
+      , 'packet_class' : Packet
+    }));
+  })
+
+  // forward events from transport
+  this.transport.on('packet', function(packet){
+    self.emit('packet', packet);
+  });
+  this.transport.on('wrong_recipient', function(packet){
+    self.emit('wrong_recipient', packet);
+  });
+  this.transport.on('bad_data', function(buffer, err){
+    self.emit('bad_data', buffer, err);
+  });
+};
+
+util.inherits(SerialBuster, EventEmitter);
+
+SerialBuster.prototype.sendPacket = function(packet) {
   var outbuffer = packet.toData();
   var numberOfChunks = Math.ceil(outbuffer.length / this.config.remote_buffer_size);
   var count = 0;
@@ -65,10 +67,10 @@ SerialPort.prototype.sendPacket = function(packet) {
   }
 };
 
-SerialPort.prototype._sendNextChunk = function () {
+SerialBuster.prototype._sendNextChunk = function () {
   if(this.queue.length > 0) {
     var data = this.queue.shift();
-    this.write(data);
+    this.transport.write(data);
   }else{
     clearInterval(this.interval);
     this.interval = null;
@@ -76,130 +78,13 @@ SerialPort.prototype._sendNextChunk = function () {
 }
 
 
-
-// Parser for SerialPort
-module.exports.parser = parser = function(recipient, spec) {
-  if(recipient == undefined || recipient === null)
-    throw new Error("You have to supply the clients address");
-  
-  var config = {
-      'debug'   : false
-    , 'packet_max_size' : PACKET_MAX_SIZE
-    , 'packet_class' : Packet
-  };
-  _u.extend(config, spec);
-  
-  var packetBuffer = new Buffer(config.packet_max_size);
-  var position = 0;
-  var prepend_esc_char = false;
-  
-  return function(emitter, buffer) {
-    
-    // keep raw working
-    emitter.emit('data', buffer);
-    
-    var bufferpos = 0;
-        
-    // take care of nasty edge case where we need to prepend and escape
-    // char to this buffer since last buffer ended in an escape char.
-    if(prepend_esc_char) {
-      var _new_buffer = new Buffer(buffer.length+1, 'hex');
-      _new_buffer[0] = CONSTANTS.ESC;
-      buffer.copy(_new_buffer, 1);
-      buffer = _new_buffer;
-      prepend_esc_char = false;
-    }
-
-    // Collect data
-    while(bufferpos < buffer.length) {
-      
-      var inbyte = buffer[bufferpos++];
-      
-      switch(inbyte) {
-        
-        
-        // We're starting a new packet
-        case CONSTANTS.START:
-          position = 0;
-          packetBuffer[position++] = inbyte;
-        break;
-        
-        
-        // if it's an END character then we're done with the packet
-        case CONSTANTS.END:
-        
-          packetBuffer[position++] = inbyte;
-          var packet = new config.packet_class(config);
-          position = 0;
-          
-          try {
-            // Now we'll see if the packet if valid
-            packet.load(packetBuffer);
-            
-            // Emit if right recipient
-            if(packet.recipient === recipient || packet.recipient === CONSTANTS.BROADCAST) {
-              emitter.emit('packet', packet);
-            }else{
-              emitter.emit('wrong_recipient', packet);
-            }
-          }catch(err) {
-            if (config.debug) { console.log('Serialbuster: Incoming: '+err); }
-            emitter.emit('bad_data', packetBuffer, err);
-          }
-          
-        break;
-        
-        
-        // if it's the same code as an ESC character, we'll wait for the next char and see what to do
-        case CONSTANTS.ESC:
-          
-          // Nasty edge case where this buffer chunk ended in an escape char.
-          // We'll have to bail here and wait for next buffer chunk to come in
-          // and hope for it to have the escaped char.
-          if(bufferpos === buffer.length) {
-            prepend_esc_char = true;
-            break;
-          };
-          
-          // read one more
-          inbyte = buffer[bufferpos++];
-          
-          switch(inbyte) {
-            
-            /* if "c" is not one of these two, then we
-             * have a protocol violation.  The best bet
-             * seems to be to leave the byte alone and
-             * just stuff it into the packet
-             */
-            case CONSTANTS.ESC_END:
-              inbyte = CONSTANTS.END;
-            break;
-            case CONSTANTS.ESC_START:
-              inbyte = CONSTANTS.START;
-            break;
-            case CONSTANTS.ESC_ESC:
-              inbyte = CONSTANTS.ESC;
-            break;
-          }
-        
-        /* here we fall into the default handler and let
-         * it store the character for us
-         */
-        default:
-          packetBuffer[position++] = inbyte;
-      }
-    }
-  }
-};
-
-
 // Packet
 module.exports.Packet = Packet = function(spec) {
   this.config = {
-      'recipient' : CONSTANTS.BROADCAST
-    , 'sender' : CONSTANTS.MASTER
+      'recipient' : PROTOCOL.BROADCAST
+    , 'sender' : PROTOCOL.MASTER
     , 'payload' : null
-    , 'packet_max_size' : PACKET_MAX_SIZE
+    , 'packet_max_size' : 10240
   };
   _u.extend(this.config, spec);
   this.sender = this.config.sender;
@@ -233,10 +118,10 @@ Packet.prototype.load = function(incoming) {
   }
   
   // Tests for valid packet data
-  assert(buffer.readUInt8(0), CONSTANTS.START, 'Start byte');
-  assert(buffer.readUInt8(buffer.length - 1), CONSTANTS.END, 'End byte');
+  assert(buffer.readUInt8(0), PROTOCOL.START, 'Start byte');
+  assert(buffer.readUInt8(buffer.length - 1), PROTOCOL.END, 'End byte');
   assert(buffer.readUInt8(buffer.length - 2), this.crc8(buffer, PACKET_HEADER_SIZE + payload_length), 'Checksum');
-  assert(buffer.readUInt8(PACKET_HEADER_SIZE + payload_length + 1), CONSTANTS.END, 'Length');
+  assert(buffer.readUInt8(PACKET_HEADER_SIZE + payload_length + 1), PROTOCOL.END, 'Length');
   
   // Set relevant data to our object
   this.recipient = buffer.readUInt8(1);
@@ -257,7 +142,7 @@ Packet.prototype.setPayload = function (data) {
 // Returns escaped data for transmission
 Packet.prototype.toData = function() {
   var crc8_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE);
-  crc8_buffer[0] = CONSTANTS.START;
+  crc8_buffer[0] = PROTOCOL.START;
   crc8_buffer[1] = this.recipient;
   crc8_buffer[2] = this.sender;
   crc8_buffer.writeInt16LE(this.payload.length, 3);
@@ -271,7 +156,7 @@ Packet.prototype.toData = function() {
   
   // How many chars to do we have to escape?
   var escaped_chars = _u.filter(escape_buffer, function (item) {
-    return (item == CONSTANTS.ESC || item == CONSTANTS.END || item == CONSTANTS.START);
+    return (item == PROTOCOL.ESC || item == PROTOCOL.END || item == PROTOCOL.START);
   }).length - 1; // minus 1 since we don't want to count the START byte
   
   // payload data
@@ -280,24 +165,24 @@ Packet.prototype.toData = function() {
   // leave 2 bytes for crc8 and END
   var outgoing_buffer = new Buffer(this.payload.length + PACKET_HEADER_SIZE + escaped_chars + 2);
   
-  outgoing_buffer[0] = CONSTANTS.START;
+  outgoing_buffer[0] = PROTOCOL.START;
   var outgoing_buffer_pos = 1;
   
   // Escape the buffer
   for (var i=1; i < escape_buffer.length; i++) {
     var b = escape_buffer[i];
     switch(b) {
-      case CONSTANTS.START:
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_START;
+      case PROTOCOL.START:
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC_START;
       break;
-      case CONSTANTS.END:
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_END;
+      case PROTOCOL.END:
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC_END;
       break;
-      case CONSTANTS.ESC:
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC;
-        outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.ESC_ESC;
+      case PROTOCOL.ESC:
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC;
+        outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.ESC_ESC;
       break;
       default:
         outgoing_buffer[outgoing_buffer_pos++] = b;
@@ -306,9 +191,8 @@ Packet.prototype.toData = function() {
   }
 
   // add the final end byte
-  outgoing_buffer[outgoing_buffer_pos++] = CONSTANTS.END;
-  //console.log(outgoing_buffer)
-  
+  outgoing_buffer[outgoing_buffer_pos++] = PROTOCOL.END;
+
   return outgoing_buffer;
   
 };

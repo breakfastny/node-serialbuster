@@ -3,6 +3,8 @@ var serialport = require("serialport");
 var colors  = require("colors");
 var _u = require('underscore');
 var sb = require('..');
+var SerialTransport = require('../libs/transport/serial');
+var PROTOCOL = require('../libs/protocol');
 var fs = require('fs');
 var argv = require('optimist')
     .usage('Usage: $0 -p [serialport] -b [baud] -v [verbose]')
@@ -110,9 +112,6 @@ var tests = [
 ];
 
 
-console.log(tests)
-
-
 var TestSuite = function () {
   var self = this;
   this.tests = [];
@@ -122,13 +121,14 @@ var TestSuite = function () {
 TestSuite.prototype.init = function (port, baud, tests) {
   this.tests = tests;
   this.testCase = 0;
-  this.serial = new sb.SerialBuster(port, {
+  var transport = new SerialTransport(port, {
       'baudrate' : baud
-    , 'parser' : sb.parser(sb.CONSTANTS.MASTER, {debug:true})
+  });
+  this.serial = new sb.SerialBuster(transport, {
+      'address' : PROTOCOL.MASTER
     , 'buffersize' : 1024
     , 'remote_buffer_size' : 63
   });
-  //this.serial.on('data', console.log);
   this.serial.on('packet', this.onPacket);
 };
 
