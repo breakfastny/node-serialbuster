@@ -77,3 +77,9 @@ npm install git+https://github.com/breakfastny/node-serialbuster
 ```javascript
 make test
 ```
+
+## Version History
+
+### 0.0.6
+Perform DNS lookup before connecting to TCP socket. Also preventing
+clients from writing data to a closed TCP socket.

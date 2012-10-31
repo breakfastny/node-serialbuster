@@ -1,6 +1,6 @@
 {
     "name": "serialbuster"
-  , "version": "0.0.5"
+  , "version": "0.0.6"
   , "description": "Protocol for packetized communication over serial, with support for addressing and broadcast. Suitable for an RS485 bus."
   , "author": "Mattias Gunneras <mattias@breakfastny.com>"
   , "dependencies": {
