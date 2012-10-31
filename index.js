@@ -86,6 +86,10 @@ SerialBuster.prototype._sendNextChunk = function () {
   }
 }
 
+SerialBuster.prototype.toString = function () {
+  return "[object SerialBuster]";
+};
+
 
 // Packet
 module.exports.Packet = Packet = function(spec) {
