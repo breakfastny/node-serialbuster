@@ -1,5 +1,5 @@
 var Packet = require('..').Packet;
-var CONSTANTS = require('..').CONSTANTS;
+var PROTOCOL = require('..').PROTOCOL;
 var parser = require('..').parser;
 var assert = require('assert');
 var EventEmitter = require("events").EventEmitter;
@@ -21,13 +21,13 @@ suite('Packet Incoming', function() {
     test('should return true when packet data is correct', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
-      buffer[0] = CONSTANTS.START;
+      buffer[0] = PROTOCOL.START;
       buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xA1; // crc8
-      buffer[11] = CONSTANTS.END; // end
+      buffer[11] = PROTOCOL.END; // end
       var result = p.load(buffer, buffer.length);
       assert.equal(result, true);
     });
@@ -41,7 +41,7 @@ suite('Packet Incoming', function() {
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xA1; // crc8
-      buffer[11] = CONSTANTS.END; // end
+      buffer[11] = PROTOCOL.END; // end
       
       assert.throws(function() {
         p.load(buffer, buffer.length);
@@ -51,7 +51,7 @@ suite('Packet Incoming', function() {
     test('should throw error when end byte is incorrect', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
-      buffer[0] = CONSTANTS.START;
+      buffer[0] = PROTOCOL.START;
       buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
@@ -67,13 +67,13 @@ suite('Packet Incoming', function() {
     test('should throw error when crc8 byte is incorrect', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
-      buffer[0] = CONSTANTS.START;
+      buffer[0] = PROTOCOL.START;
       buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(5, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xA2; // crc8
-      buffer[11] = CONSTANTS.END; // end
+      buffer[11] = PROTOCOL.END; // end
       
       assert.throws(function() {
         p.load(buffer, buffer.length);
@@ -83,13 +83,13 @@ suite('Packet Incoming', function() {
     test('should throw error when length is wrong', function() {
       var p = new Packet();
       var buffer = new Buffer(12, 'hex');
-      buffer[0] = CONSTANTS.START;
+      buffer[0] = PROTOCOL.START;
       buffer[1] = 'R'; // receiver
       buffer[2] = 'S'; // sender
       buffer.writeUInt16LE(6, 3);
       buffer.write("HELLO", 5);
       buffer[10] = 0xA1; // crc8
-      buffer[11] = CONSTANTS.END; // end
+      buffer[11] = PROTOCOL.END; // end
       
       assert.throws(function() {
         p.load(buffer, buffer.length);
@@ -110,14 +110,14 @@ suite('Packet Incoming', function() {
        var e = new EventEmitter();
     
        var buffer = new Buffer(13, 'hex');
-       buffer[0] = CONSTANTS.START;
+       buffer[0] = PROTOCOL.START;
        buffer[1] = 0x1B; // recipient (escaped)
        buffer[2] = 0x1E; // recipient (escaped start 0x02)
        buffer[3] = 'S'; // sender
        buffer.writeUInt16LE(5, 4);
        buffer.write("HELLO", 6);
        buffer[11] = 0xF0; // crc8
-       buffer[12] = CONSTANTS.END; // end
+       buffer[12] = PROTOCOL.END; // end
     
        e.on('packet', function(packet) {
          done('Should not get this');
@@ -144,14 +144,14 @@ suite('Packet Incoming', function() {
        var e = new EventEmitter();
     
        var buffer = new Buffer(13, 'hex');
-       buffer[0] = CONSTANTS.START;
+       buffer[0] = PROTOCOL.START;
        buffer[1] = 0x1B; // recipient (escaped)
        buffer[2] = 0x1E; // recipient (escaped start 0x02)
        buffer[3] = 'S'; // sender
        buffer.writeUInt16LE(5, 4);
        buffer.write("HELLO", 6);
        buffer[11] = 0xF0; // crc8
-       buffer[12] = CONSTANTS.END; // end
+       buffer[12] = PROTOCOL.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -178,14 +178,14 @@ suite('Packet Incoming', function() {
        var e = new EventEmitter();
     
        var buffer = new Buffer(14, 'hex');
-       buffer[0] = CONSTANTS.START;
+       buffer[0] = PROTOCOL.START;
        buffer[1] = 0x1B; // recipient (escaped)
        buffer[2] = 0x1E; // recipient (escaped start 0x02)
        buffer[3] = 'S'; // sender
        buffer.writeUInt16LE(5, 4);
        buffer.write("\x1B\x1CELLO", 6);
        buffer[12] = 0x69; // crc8
-       buffer[13] = CONSTANTS.END; // end
+       buffer[13] = PROTOCOL.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -212,14 +212,14 @@ suite('Packet Incoming', function() {
        var e = new EventEmitter();
     
        var buffer = new Buffer(16, 'hex');
-       buffer[0] = CONSTANTS.START;
+       buffer[0] = PROTOCOL.START;
        buffer[1] = 0x1B; // recipient (escaped)
        buffer[2] = 0x1E; // recipient (escaped start 0x02)
        buffer[3] = 'S'; // sender
        buffer.writeUInt16LE(6, 4);
        buffer.write("\x1B\x1CELLO\x1B\x1C", 6);
        buffer[14] = 0xDE; // crc8
-       buffer[15] = CONSTANTS.END; // end
+       buffer[15] = PROTOCOL.END; // end
     
        e.on('packet', function(packet) {
          // this is what we want
@@ -246,7 +246,7 @@ suite('Packet Incoming', function() {
       var e = new EventEmitter();
 
       var buffer1 = new Buffer(14, 'hex');
-      buffer1[0] = CONSTANTS.START;
+      buffer1[0] = PROTOCOL.START;
       buffer1[1] = 0x1B; // recipient (escaped)
       buffer1[2] = 0x1E; // recipient (escaped start 0x02)
       buffer1[3] = 'S'; // sender
@@ -255,7 +255,7 @@ suite('Packet Incoming', function() {
       
       var buffer2 = new Buffer(2, 'hex');
       buffer2[0] = 0xDE; // crc8
-      buffer2[1] = CONSTANTS.END; // end
+      buffer2[1] = PROTOCOL.END; // end
 
       e.on('packet', function(packet) {
         // this is what we want
@@ -283,7 +283,7 @@ suite('Packet Incoming', function() {
       var e = new EventEmitter();
     
       var buffer1 = new Buffer(13, 'hex');
-      buffer1[0] = CONSTANTS.START;
+      buffer1[0] = PROTOCOL.START;
       buffer1[1] = 0x1B; // recipient (escaped)
       buffer1[2] = 0x1E; // recipient (escaped start 0x02)
       buffer1[3] = 'S'; // sender
@@ -293,7 +293,7 @@ suite('Packet Incoming', function() {
       var buffer2 = new Buffer(3, 'hex');
       buffer2[0] = 0x1C;
       buffer2[1] = 0xDE; // crc8
-      buffer2[2] = CONSTANTS.END; // end
+      buffer2[2] = PROTOCOL.END; // end
     
       e.on('packet', function(packet) {
         // this is what we want

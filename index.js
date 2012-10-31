@@ -15,6 +15,7 @@ var PACKET_HEADER_SIZE    = 5;
 module.exports.SerialTransport = SerialTransport;
 module.exports.TCPTransport = TCPTransport;
 module.exports.PROTOCOL = PROTOCOL;
+module.exports.parser = parser;
 
 
 // Main interface
