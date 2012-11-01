@@ -14,7 +14,6 @@ module.exports = TCPTransport = function (port, spec) {
   this.open = false;
   dns.resolve(this.host, function(err, addresses){
     if (err){
-      console.log(self.port)
       self.emit('error', err);
       return;
     }
