@@ -63,15 +63,17 @@ module.exports = parser = function(recipient, spec) {
             // Now we'll see if the packet if valid
             packet.load(packetBuffer);
             
-            // Emit if right recipient
-            if(packet.recipient === recipient || packet.recipient === PROTOCOL.BROADCAST) {
-              emitter.emit('packet', packet);
-            }else{
-              emitter.emit('wrong_recipient', packet);
-            }
           }catch(err) {
             if (config.debug) { console.log('Serialbuster: Incoming: '+err); }
             emitter.emit('bad_data', packetBuffer, err);
+            break;
+          }
+
+          // Emit if right recipient
+          if(packet.recipient === recipient || packet.recipient === PROTOCOL.BROADCAST) {
+            emitter.emit('packet', packet);
+          }else{
+            emitter.emit('wrong_recipient', packet);
           }
           
         break;
