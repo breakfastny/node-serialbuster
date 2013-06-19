@@ -26,6 +26,7 @@ module.exports.SerialBuster = SerialBuster = function(transport, spec) {
       'address' : PROTOCOL.MASTER // my address
     , 'remote_buffer_size' : 63 // byte size of smallest remote buffer
     , 'chunk_delay' : 15 // ms of delay between chunk transmission
+    , 'chunk' : true
     , 'debug' : false 
   };
   _u.extend(this.config, spec);
@@ -57,6 +58,9 @@ module.exports.SerialBuster = SerialBuster = function(transport, spec) {
 util.inherits(SerialBuster, EventEmitter);
 
 SerialBuster.prototype.sendPacket = function(packet) {
+  if (this.config.chunk === false)
+    return this.transport.write(packet.toData());
+
   var outbuffer = packet.toData();
   var numberOfChunks = Math.ceil(outbuffer.length / this.config.remote_buffer_size);
   var count = 0;
