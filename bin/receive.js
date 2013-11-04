@@ -49,7 +49,7 @@ buster.on('packet', function (packet) {
   if(argv.type == 'int'){
     var out = packet.payload.readInt16LE(0);
   }else{
-    var out = packet.payload.toString();
+    var out = packet.payload.toString('hex');
   }
   logYellow('Recived packet to: '+packet.recipient+' from: '+packet.sender+' payload: "'+out+'" length: '+packet.toData().length);
   if (argv.v) {
