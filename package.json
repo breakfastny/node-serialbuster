@@ -4,7 +4,7 @@
   , "description": "Protocol for packetized communication over serial, with support for addressing and broadcast. Suitable for an RS485 bus."
   , "author": "Mattias Gunneras <mattias@breakfastny.com>"
   , "dependencies": {
-        "serialport": "1.1.3"
+        "serialport": "1.2.5"
       , "underscore" : "1.3.1"
     }
   , "devDependencies": {
