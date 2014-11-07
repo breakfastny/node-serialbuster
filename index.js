@@ -57,9 +57,9 @@ module.exports.SerialBuster = SerialBuster = function(transport, spec) {
 
 util.inherits(SerialBuster, EventEmitter);
 
-SerialBuster.prototype.sendPacket = function(packet) {
+SerialBuster.prototype.sendPacket = function(packet, callback) {
   if (this.config.chunk === false)
-    return this.transport.write(packet.toData());
+    return this.transport.write(packet.toData(), callback);
 
   var outbuffer = packet.toData();
   var numberOfChunks = Math.ceil(outbuffer.length / this.config.remote_buffer_size);

@@ -46,10 +46,10 @@ TCPTransport.prototype.setParser = function (parser) {
   });
 };
 
-TCPTransport.prototype.write = function (buffer) {
+TCPTransport.prototype.write = function (buffer, callback) {
   if(!this.open){
     this.emit('error', new Error('Cant write to closed socket'));
     return;
   }
-  return this.socket.write(buffer);
+  return this.socket.write(buffer, callback);
 };
